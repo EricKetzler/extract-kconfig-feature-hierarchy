@@ -3,5 +3,10 @@ Instructions for Usage:
 2. place files 'construct-hierarchy.py' and 'iterate-versions.sh' in root directory
 3. download and install kconfiglib: https://pypi.org/project/kconfiglib/
 4. enter path to directory containing UVL models in 'iterate-versions.sh'
-5. run 'iterate-versions.sh' from console to execute 'construct-hierarchy' for all UVL files in UVL directory;
+5. run 'iterate-versions.sh' from console to execute 'construct-hierarchy.py' for all UVL files in UVL directory;
    the UVL files should be named after their corresponding linux version e.g. v2.6.7[x86].uvl
+
+Requires:
+- Python Version >= 2.7, != 3.0.*,!= 3.1.*
+- everything needed to build the linux kernel (make, a C compiler, etc.)
+
