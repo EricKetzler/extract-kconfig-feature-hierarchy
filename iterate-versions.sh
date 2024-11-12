@@ -8,6 +8,10 @@ LINUX_SRC_DIR="."
 # Ensure you're in the Linux source directory
 cd "$LINUX_SRC_DIR" || { echo "Linux source directory not found!"; exit 1; }
 
+#remove old statistics and write new file
+touch statistics.csv
+echo "version;false negatives;false positives;tree depth;tree width;parent-child-relationships" > statistics.csv
+
 # Loop through all .uvl files in the UVL directory
 for uvl_file in "$UVL_DIR"/*[^hierarchy].uvl; do
     # Extract the version from the UVL filename (e.g., v2.6.24[x86].uvl -> v2.6.24)
