@@ -60,7 +60,8 @@ def extract_menu_features(menu_lines):
         feature = line.strip()
 
         if("config " in line and "comment" not in line):
-            feature = feature.strip("config").strip()
+            feature = feature.replace("config", "")
+            feature = feature.strip()
             if(feature[0].isdigit()):
                 feature = '"' + feature + '"'
             feature += "\n"
@@ -80,7 +81,7 @@ def extract_menu_features(menu_lines):
     were not present in the input uvl. These features only appear as comments in the output. A second file will be
     output containing all the differing features. '''
 
-def construct_hierarchy(uvl_lines, menu_lines, uvl_features, menu_features, unconstrained_features, constraints):
+def construct_hierarchy(menu_lines, uvl_features, menu_features, constraints):
     global uvl
     output = 'namespace root\n\nfeatures\n\tRoot\n'
     current_indent = 0
@@ -91,8 +92,6 @@ def construct_hierarchy(uvl_lines, menu_lines, uvl_features, menu_features, unco
     diff_kconfiglib = "Features in Kconfiglib but not in Kmax:\n\n"
     diff_count = 0
     diff_kmax = "Features in Kmax not in Kconfiglib: \n\n"
-    tree_width = {}
-    parent_child_relationships = 0
 
     for i,line in enumerate(menu_features):
 
@@ -100,28 +99,26 @@ def construct_hierarchy(uvl_lines, menu_lines, uvl_features, menu_features, unco
         menu_line = menu_lines[i]
         sym_type = ""
 
-        if "config " in menu_line and not "comment" in menu_line:
+        if "config " in menu_line and "comment" not in menu_line:
              sym_type = TYPE_TO_STR[kconf.syms[line.strip().strip('"')].type]
 
         if line not in uvl_features:
-            if ("config " in menu_line and "comment" not in menu_line and line not in unconstrained_features):
-                comment = "//"
+            if ("config " in menu_line and "comment" not in menu_line):
                 diff_kconfiglib += line
                 diff_count += 1
+                continue
         if line in uvl_features:
             del uvl_features[uvl_features.index(line)]
 
         if 'menu' in menu_line:
             if current_indent == check_indent(menu_line):
                 if current_indent in check_usage:
-                    tree_width[current_indent] += 1
                     if check_usage[current_indent] == "optional":
                         output += tabstr.removesuffix("\t") + "mandatory\n"
                         check_usage[current_indent] = "mandatory"
                 else:
                     output += tabstr.removesuffix("\t") + "mandatory\n"
                     check_usage[current_indent] = "mandatory"
-                    tree_width[current_indent] = 1
                 output += tabstr + line.strip() + " {abstract}\n"
 
             elif current_indent < check_indent(menu_line):
@@ -129,10 +126,6 @@ def construct_hierarchy(uvl_lines, menu_lines, uvl_features, menu_features, unco
                 tabstr += '\t\t'
                 current_indent = check_indent(menu_line)
                 check_usage[current_indent] = "mandatory"
-                if current_indent in tree_width:
-                    tree_width[current_indent] += 1
-                else:
-                    tree_width[current_indent] = 1
 
             elif current_indent > check_indent(menu_line):
                 choice_tag = False
@@ -141,13 +134,12 @@ def construct_hierarchy(uvl_lines, menu_lines, uvl_features, menu_features, unco
                     tabstr = tabstr.removesuffix('\t')
                     diff -= 1
                 current_indent = check_indent(menu_line)
-                tree_width[current_indent] += 1
                 if check_usage[current_indent] == "optional":
                     output += tabstr.removesuffix("\t") + "mandatory\n"
                     check_usage[current_indent] = "mandatory"
                 output += tabstr + line.strip() + " {abstract}\n"
 
-        elif 'config ' in menu_line:
+        elif 'config ' in menu_line and "comment " not in menu_line :
             if current_indent == check_indent(menu_line):
                 if choice_tag == False:
                     if current_indent in check_usage:
@@ -158,20 +150,12 @@ def construct_hierarchy(uvl_lines, menu_lines, uvl_features, menu_features, unco
                         output += tabstr.removesuffix("\t") + "optional\n"
                         check_usage[current_indent] = "optional"
                 output += tabstr + comment
-                if current_indent in tree_width:
-                    tree_width[current_indent] += 1
-                else:
-                    tree_width[current_indent] = 1
 
             elif current_indent < check_indent(menu_line):
                 output += tabstr + "\toptional\n" + tabstr + '\t\t' + comment
                 tabstr += '\t\t'
                 current_indent = check_indent(menu_line)
                 check_usage[current_indent] = "optional"
-                if current_indent in tree_width:
-                    tree_width[current_indent] += 1
-                else:
-                    tree_width[current_indent] = 1
 
             elif current_indent > check_indent(menu_line):
                 choice_tag = False
@@ -180,7 +164,6 @@ def construct_hierarchy(uvl_lines, menu_lines, uvl_features, menu_features, unco
                     tabstr = tabstr.removesuffix('\t')
                     diff -= 1
                 current_indent = check_indent(menu_line)
-                tree_width[current_indent] += 1
                 if check_usage[current_indent] == "mandatory":
                     output += tabstr.removesuffix("\t") + "optional\n"
                     check_usage[current_indent] = "optional"
@@ -197,19 +180,14 @@ def construct_hierarchy(uvl_lines, menu_lines, uvl_features, menu_features, unco
                 if check_usage[current_indent] == "mandatory":
                     output += tabstr.removesuffix("\t") + "optional\n"
                     check_usage[current_indent] = "optional"
-                output += tabstr + 'choice' + str(choice_nr) + '\n' + tabstr + '\tor\n'
+                output += tabstr + 'choice' + str(choice_nr) + ' {abstract}\n' + tabstr + '\tor\n'
                 tabstr += '\t\t'
-                tree_width[current_indent] += 1
 
             elif current_indent < check_indent(menu_line):
-                output += tabstr + "\toptional\n" + tabstr + '\t\t' + 'choice' + str(choice_nr) + '\n' + tabstr + '\t\t\tor\n'
+                output += tabstr + "\toptional\n" + tabstr + '\t\t' + 'choice' + str(choice_nr) + ' {abstract}\n' + tabstr + '\t\t\tor\n'
                 tabstr += '\t\t\t\t'
                 current_indent = check_indent(menu_line)
                 check_usage[current_indent] = "optional"
-                if current_indent in tree_width:
-                    tree_width[current_indent] += 1
-                else:
-                    tree_width[current_indent] = 1
 
             elif current_indent > check_indent(menu_line):
                 diff = current_indent - check_indent(menu_line)
@@ -220,9 +198,8 @@ def construct_hierarchy(uvl_lines, menu_lines, uvl_features, menu_features, unco
                 if check_usage[current_indent] == "mandatory":
                     output += tabstr.removesuffix("\t") + "optional\n"
                     check_usage[current_indent] = "optional"
-                output += tabstr + 'choice' + str(choice_nr) + '\n' + tabstr + '\tor\n'
+                output += tabstr + 'choice' + str(choice_nr) + ' {abstract}\n' + tabstr + '\tor\n'
                 tabstr += '\t\t'
-                tree_width[current_indent] += 1
 
             choice_nr += 1
             current_indent += 2
@@ -235,7 +212,7 @@ def construct_hierarchy(uvl_lines, menu_lines, uvl_features, menu_features, unco
     if check_usage[0] == "optional":
         output += "\t\tmandatory\n"
         check_usage[0] = "mandatory"
-    output += "\t\t\tVisibility-Features {abstract}\n\t\t\t\toptional\n"
+    output += '\t\t\t"Visibility-Features" {abstract}\n\t\t\t\toptional\n'
 
     nv_features = []
     for line in uvl_features:
@@ -245,7 +222,8 @@ def construct_hierarchy(uvl_lines, menu_lines, uvl_features, menu_features, unco
             nv_features.append(line)
     del uvl_features
 
-    output += "\t\toptional\n"
+    if nv_features:
+        output += "\t\toptional\n"
     for line in nv_features:
          output += "\t\t\t" + line
          diff_kmax += line
@@ -263,19 +241,6 @@ def construct_hierarchy(uvl_lines, menu_lines, uvl_features, menu_features, unco
     output_file.write(diff_kconfiglib + diff_kmax)
     output_file.close()
 
-    version_index = uvl.rfind("/") + 1
-    version = uvl[version_index:].removesuffix("[x86].uvl")
-
-    values = list(tree_width.values())
-    max_width = max(values)
-
-    for i in range(1,len(values)-1):
-        parent_child_relationships += values[i]
-
-    csv = open("statistics.csv", "a")
-    csv.write(version + ";" + str(len(nv_features)) + ";" + str(diff_count) + ";" + str(len(check_usage)) + ";" + str(max_width) + ";" + str(parent_child_relationships) + "\n")
-
-
 kconf = Kconfig(sys.argv[1])
 uvl = sys.argv[2]
 
@@ -290,7 +255,8 @@ unconstrained_features_file.close()
 menu_lines = []
 write_items(kconf.top_node, 0)
 uvl_features, constraints = extract_uvl_features(uvl_lines)
+uvl_features = uvl_features + unconstrained_features
 menu_features = extract_menu_features(menu_lines)
 
-construct_hierarchy(uvl_lines, menu_lines, uvl_features, menu_features, unconstrained_features, constraints)
+construct_hierarchy(menu_lines, uvl_features, menu_features, constraints)
 
