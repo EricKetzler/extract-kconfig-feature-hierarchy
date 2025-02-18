@@ -1,5 +1,6 @@
 Instructions for Usage:
-1. clone source tree of linux kernel: https://github.com/torvalds/linux/tree/master
+1. clone source tree of linux kernel: https://github.com/torvalds/linux/tree/master (only has tags back to version v2.6.12, for older 
+versions use: https://github.com/ekuiter/linux.git)
 2. place files 'construct-hierarchy.py' and 'iterate-versions.sh' in root directory
 3. download and install kconfiglib: https://pypi.org/project/kconfiglib/
 4. enter path to directory containing UVL models in 'iterate-versions.sh'
@@ -8,5 +9,5 @@ Instructions for Usage:
 
 Requires:
 - Python Version >= 2.7, != 3.0.*,!= 3.1.*
-- everything needed to build the linux kernel (make, a C compiler, etc.)
+- everything needed to build the Linux kernel (make, a C compiler, etc.)
 
